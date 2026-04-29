@@ -1,6 +1,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -83,6 +84,17 @@ type OrphanyStoreValue = {
   setNotificationPreference: (id: string, on: boolean) => void;
 };
 
+type PersistedOrphanyState = {
+  campaigns: Campaign[];
+  orphans: Orphan[];
+  donations: Donation[];
+  notifications: Notification[];
+  events: CalendarEvent[];
+  profile: ProfileState;
+  notificationPreferences: NotificationPreference[];
+  volunteerNotes: VolunteerNote[];
+};
+
 const initialPreferences: NotificationPreference[] = [
   { id: "monthly-reminders", label: "Monthly sponsorship reminders", on: true },
   { id: "child-updates", label: "Updates from sponsored orphans", on: true },
@@ -91,10 +103,13 @@ const initialPreferences: NotificationPreference[] = [
 ];
 
 const OrphanyStoreContext = createContext<OrphanyStoreValue | null>(null);
+const STORAGE_KEY = "orphany.store.v1";
 
 const makeId = (prefix: string) =>
   `${prefix}-${Math.random().toString(36).slice(2, 8)}-${Date.now().toString(36)}`;
 const today = () => new Date().toISOString().slice(0, 10);
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
 
 export function OrphanyStoreProvider({ children }: { children: ReactNode }) {
   const [campaigns, setCampaigns] = useState<Campaign[]>(seedCampaigns);
@@ -112,7 +127,99 @@ export function OrphanyStoreProvider({ children }: { children: ReactNode }) {
   const [notificationPreferences, setNotificationPreferences] =
     useState<NotificationPreference[]>(initialPreferences);
   const [volunteerNotes, setVolunteerNotes] = useState<VolunteerNote[]>([]);
+  const [isStorageReady, setIsStorageReady] = useState(false);
   const imageCursorRef = useRef(0);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        return;
+      }
+
+      const parsed: unknown = JSON.parse(raw);
+      if (!isRecord(parsed)) {
+        return;
+      }
+
+      if (Array.isArray(parsed.campaigns)) {
+        setCampaigns(parsed.campaigns as Campaign[]);
+      }
+      if (Array.isArray(parsed.orphans)) {
+        setOrphans(parsed.orphans as Orphan[]);
+      }
+      if (Array.isArray(parsed.donations)) {
+        setDonations(parsed.donations as Donation[]);
+      }
+      if (Array.isArray(parsed.notifications)) {
+        setNotifications(parsed.notifications as Notification[]);
+      }
+      if (Array.isArray(parsed.events)) {
+        setEvents(parsed.events as CalendarEvent[]);
+      }
+      if (Array.isArray(parsed.notificationPreferences)) {
+        setNotificationPreferences(parsed.notificationPreferences as NotificationPreference[]);
+      }
+      if (Array.isArray(parsed.volunteerNotes)) {
+        setVolunteerNotes(parsed.volunteerNotes as VolunteerNote[]);
+      }
+      if (isRecord(parsed.profile)) {
+        setProfile({
+          firstName:
+            typeof parsed.profile.firstName === "string" ? parsed.profile.firstName : "Sara",
+          lastName: typeof parsed.profile.lastName === "string" ? parsed.profile.lastName : "Ahmed",
+          email:
+            typeof parsed.profile.email === "string"
+              ? parsed.profile.email
+              : "sara.ahmed@example.com",
+          bio:
+            typeof parsed.profile.bio === "string"
+              ? parsed.profile.bio
+              : "Passionate about education-focused sponsorship.",
+          memberSince:
+            typeof parsed.profile.memberSince === "number"
+              ? parsed.profile.memberSince
+              : 2024,
+        });
+      }
+    } catch {
+      // Ignore invalid storage payloads and fall back to defaults.
+    } finally {
+      setIsStorageReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !isStorageReady) {
+      return;
+    }
+
+    const payload: PersistedOrphanyState = {
+      campaigns,
+      orphans,
+      donations,
+      notifications,
+      events,
+      profile,
+      notificationPreferences,
+      volunteerNotes,
+    };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  }, [
+    campaigns,
+    donations,
+    events,
+    isStorageReady,
+    notificationPreferences,
+    notifications,
+    orphans,
+    profile,
+    volunteerNotes,
+  ]);
 
   const addFeedItem = (title: string, body: string) => {
     setNotifications((prev) => [{ id: makeId("n"), title, body, time: "Just now", unread: true }, ...prev]);

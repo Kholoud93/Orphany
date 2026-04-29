@@ -35,7 +35,7 @@ export function OrphansPage() {
         const inUrgency = urgency === "All" || orphan.urgency === urgency;
         return inAge && inStatus && inUrgency;
       }),
-    [age, status, urgency],
+    [orphans, age, status, urgency],
   );
 
   return (
