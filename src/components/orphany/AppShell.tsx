@@ -58,13 +58,9 @@ export function AppShell() {
 
     const orphanResults = orphans
       .filter((orphan) =>
-        [
-          orphan.name,
-          orphan.location,
-          orphan.story,
-          orphan.status,
-          orphan.needs.join(" "),
-        ].some((value) => includesQuery(value, normalizedQuery)),
+        [orphan.name, orphan.location, orphan.story, orphan.status, orphan.needs.join(" ")].some(
+          (value) => includesQuery(value, normalizedQuery),
+        ),
       )
       .slice(0, 4)
       .map((orphan) => ({
@@ -89,7 +85,9 @@ export function AppShell() {
       }));
 
     const eventResults = events
-      .filter((event) => [event.title, event.kind].some((value) => includesQuery(value, normalizedQuery)))
+      .filter((event) =>
+        [event.title, event.kind].some((value) => includesQuery(value, normalizedQuery)),
+      )
       .slice(0, 2)
       .map((event) => ({
         id: event.id,
@@ -139,23 +137,34 @@ export function AppShell() {
     setSearchOpen(false);
     setSearchQuery("");
 
-    if (result.type === "orphan") {
-      await navigate({ to: "/orphan-profile/$orphanId", params: { orphanId: result.id } });
-      return;
+    let targetPath = "/";
+    try {
+      if (result.type === "orphan") {
+        targetPath = `/orphan-profile/${result.id}`;
+        await navigate({ to: "/orphan-profile/$orphanId", params: { orphanId: result.id } });
+        return;
+      }
+      if (result.type === "campaign") {
+        targetPath = "/campaigns";
+        await navigate({ to: "/campaigns" });
+        return;
+      }
+      if (result.type === "event") {
+        targetPath = "/calendar";
+        await navigate({ to: "/calendar" });
+        return;
+      }
+      if (result.type === "donation") {
+        targetPath = "/profile";
+        await navigate({ to: "/profile" });
+        return;
+      }
+      await navigate({ to: "/" });
+    } catch {
+      if (typeof window !== "undefined") {
+        window.location.assign(targetPath);
+      }
     }
-    if (result.type === "campaign") {
-      await navigate({ to: "/campaigns" });
-      return;
-    }
-    if (result.type === "event") {
-      await navigate({ to: "/calendar" });
-      return;
-    }
-    if (result.type === "donation") {
-      await navigate({ to: "/profile" });
-      return;
-    }
-    await navigate({ to: "/" });
   };
 
   return (

@@ -49,12 +49,12 @@ export function VolunteerBento() {
   };
 
   const handleViewProfile = async (orphanId: string) => {
-    const targetPath = `/orphan-profile/${orphanId}`;
     setOpeningProfileId(orphanId);
     try {
       await navigate({ to: "/orphan-profile/$orphanId", params: { orphanId } });
-      if (typeof window !== "undefined" && window.location.pathname !== targetPath) {
-        window.location.assign(targetPath);
+    } catch {
+      if (typeof window !== "undefined") {
+        window.location.assign(`/orphan-profile/${orphanId}`);
       }
     } finally {
       setOpeningProfileId(null);
@@ -187,7 +187,12 @@ export function VolunteerBento() {
               className="mt-4 min-h-28 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
             />
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Button type="button" variant="outline" onClick={closeNoteDialog} disabled={isSavingNote}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeNoteDialog}
+                disabled={isSavingNote}
+              >
                 Cancel
               </Button>
               <Button
