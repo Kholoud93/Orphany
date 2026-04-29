@@ -5,7 +5,7 @@ import { ProgressBar } from "@/components/orphany/ProgressBar";
 import { StatusBadge } from "@/components/orphany/StatusBadge";
 import { SponsorDialog } from "@/components/orphans/SponsorDialog";
 import { Button } from "@/components/ui/button";
-import { orphans } from "@/data/orphany";
+import { useOrphanyStore } from "@/context/orphany-store";
 
 const statusTone = {
   Sponsored: "success",
@@ -14,6 +14,7 @@ const statusTone = {
 } as const;
 
 export function OrphanDetailsPage({ orphanId }: { orphanId: string }) {
+  const { orphans, sponsorOrphan } = useOrphanyStore();
   const orphan = orphans.find((entry) => entry.id === orphanId) ?? null;
   const [isSponsorOpen, setIsSponsorOpen] = useState(false);
 
@@ -83,7 +84,10 @@ export function OrphanDetailsPage({ orphanId }: { orphanId: string }) {
 
           <div className="flex flex-wrap gap-2">
             {orphan.needs.map((need) => (
-              <span key={need} className="rounded-md bg-secondary px-2 py-1 text-xs text-secondary-foreground">
+              <span
+                key={need}
+                className="rounded-md bg-secondary px-2 py-1 text-xs text-secondary-foreground"
+              >
                 {need}
               </span>
             ))}
@@ -95,7 +99,13 @@ export function OrphanDetailsPage({ orphanId }: { orphanId: string }) {
         </div>
       </section>
 
-      {isSponsorOpen && <SponsorDialog orphan={orphan} onClose={() => setIsSponsorOpen(false)} />}
+      {isSponsorOpen && (
+        <SponsorDialog
+          orphan={orphan}
+          onConfirm={(amount) => sponsorOrphan(orphan.id, amount)}
+          onClose={() => setIsSponsorOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { events } from "@/data/orphany";
+import { useOrphanyStore } from "@/context/orphany-store";
 
 const kindStyles = {
   donation: "bg-primary text-primary-foreground",
@@ -9,6 +9,7 @@ const kindStyles = {
 } as const;
 
 export function CalendarPage() {
+  const { events } = useOrphanyStore();
   const [cursor, setCursor] = useState(() => new Date(2026, 4, 1));
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
@@ -66,7 +67,7 @@ export function CalendarPage() {
           </div>
 
           <div className="overflow-x-auto pb-1">
-            <div className="min-w-[34rem] sm:min-w-[42rem]">
+            <div className="min-w-136 sm:min-w-2xl">
               <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-muted-foreground">
                 {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                   <div key={day} className="py-2">

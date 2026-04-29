@@ -1,16 +1,17 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, DollarSign, HeartHandshake, Megaphone, Users } from "lucide-react";
-import { campaigns, events, myDonations, notifications, orphans } from "@/data/orphany";
+import { useOrphanyStore } from "@/context/orphany-store";
 import { ProgressBar } from "@/components/orphany/ProgressBar";
 import { StatCard } from "@/components/orphany/StatCard";
 import { StatusBadge } from "@/components/orphany/StatusBadge";
 
 export function AdminBento() {
-  const totalDonations = myDonations.reduce((sum, donation) => sum + donation.amount, 0) + 84120;
+  const { campaigns, events, donations, notifications, orphans } = useOrphanyStore();
+  const totalDonations = donations.reduce((sum, donation) => sum + donation.amount, 0) + 84120;
   const sponsored = orphans.filter((orphan) => orphan.status === "Sponsored").length;
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 xl:auto-rows-[minmax(0,11rem)]">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 xl:auto-rows-[minmax(11rem,auto)]">
       <StatCard
         label="Total orphans"
         value={String(orphans.length)}
@@ -38,7 +39,7 @@ export function AdminBento() {
         tone="warning"
       />
 
-      <section className="rounded-2xl border bg-card p-5 shadow-sm md:col-span-2 xl:col-span-3 xl:row-span-2">
+      <section className="min-w-0 rounded-2xl border bg-card p-5 shadow-sm md:col-span-2 xl:col-span-3 xl:row-span-2">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold">Campaign progress</h2>
           <Link
@@ -64,7 +65,7 @@ export function AdminBento() {
         </div>
       </section>
 
-      <section className="rounded-2xl border bg-sidebar p-5 text-sidebar-foreground shadow-sm md:col-span-2 xl:col-span-1 xl:row-span-2">
+      <section className="min-w-0 rounded-2xl border bg-sidebar p-5 text-sidebar-foreground shadow-sm md:col-span-2 xl:col-span-1 xl:row-span-2">
         <h2 className="font-display text-lg font-semibold">Recent activity</h2>
         <ul className="mt-4 space-y-3 text-sm">
           {notifications.map((notification) => (
@@ -83,7 +84,7 @@ export function AdminBento() {
         </ul>
       </section>
 
-      <section className="rounded-2xl border bg-card p-5 shadow-sm md:col-span-1 xl:col-span-2">
+      <section className="min-w-0 rounded-2xl border bg-card p-5 shadow-sm md:col-span-1 xl:col-span-2">
         <h2 className="mb-3 font-display text-lg font-semibold">Orphans needing sponsors</h2>
         <ul className="space-y-2">
           {orphans
@@ -113,7 +114,7 @@ export function AdminBento() {
         </ul>
       </section>
 
-      <section className="rounded-2xl border bg-card p-5 shadow-sm md:col-span-1 xl:col-span-2">
+      <section className="min-w-0 rounded-2xl border bg-card p-5 shadow-sm md:col-span-1 xl:col-span-2">
         <h2 className="mb-3 font-display text-lg font-semibold">Upcoming dates</h2>
         <ul className="space-y-3 text-sm">
           {events.slice(0, 4).map((event) => (

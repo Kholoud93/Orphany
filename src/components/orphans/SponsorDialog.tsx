@@ -4,10 +4,11 @@ import type { Orphan } from "@/data/orphany";
 
 type SponsorDialogProps = {
   orphan: Orphan;
+  onConfirm?: (amount: number) => void;
   onClose: () => void;
 };
 
-export function SponsorDialog({ orphan, onClose }: SponsorDialogProps) {
+export function SponsorDialog({ orphan, onConfirm, onClose }: SponsorDialogProps) {
   const [mode, setMode] = useState<"full" | "partial">("full");
   const [amount, setAmount] = useState(Math.max(10, Math.round(orphan.monthlyCost / 4)));
   const value = mode === "full" ? orphan.monthlyCost : amount;
@@ -77,10 +78,22 @@ export function SponsorDialog({ orphan, onClose }: SponsorDialogProps) {
           </div>
 
           <div className="flex w-full gap-2 sm:w-auto">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1 sm:flex-none">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1 sm:flex-none"
+            >
               Cancel
             </Button>
-            <Button type="button" onClick={onClose} className="flex-1 sm:flex-none">
+            <Button
+              type="button"
+              onClick={() => {
+                onConfirm?.(value);
+                onClose();
+              }}
+              className="flex-1 sm:flex-none"
+            >
               Confirm ${value}/mo
             </Button>
           </div>

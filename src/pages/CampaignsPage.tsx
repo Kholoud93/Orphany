@@ -3,13 +3,16 @@ import { Plus } from "lucide-react";
 import { DonateDialog } from "@/components/campaigns/DonateDialog";
 import { CampaignCard } from "@/components/orphany/CampaignCard";
 import { Button } from "@/components/ui/button";
-import { campaigns, type Campaign } from "@/data/orphany";
+import { useOrphanyStore } from "@/context/orphany-store";
+import { type Campaign } from "@/data/orphany";
 import { useRole } from "@/hooks/use-role";
 
 const categories = ["All", "Ramadan", "Education", "Medical", "Emergency"] as const;
+const campaignCategories = ["Ramadan", "Education", "Medical", "Emergency"] as const;
 
 export function CampaignsPage() {
   const [role] = useRole();
+  const { campaigns, addCampaign, donateToCampaign } = useOrphanyStore();
   const [category, setCategory] = useState<(typeof categories)[number]>("All");
   const [donating, setDonating] = useState<Campaign | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -58,13 +61,47 @@ export function CampaignsPage() {
         ))}
       </div>
 
-      {donating && <DonateDialog campaign={donating} onClose={() => setDonating(null)} />}
-      {isCreateOpen && <CreateCampaignDialog onClose={() => setIsCreateOpen(false)} />}
+      {donating && (
+        <DonateDialog
+          campaign={donating}
+          onDonate={(amount) => donateToCampaign(donating.id, amount)}
+          onClose={() => setDonating(null)}
+        />
+      )}
+      {isCreateOpen && (
+        <CreateCampaignDialog
+          onClose={() => setIsCreateOpen(false)}
+          onSave={(payload) => {
+            addCampaign(payload);
+            setIsCreateOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function CreateCampaignDialog({ onClose }: { onClose: () => void }) {
+function CreateCampaignDialog({
+  onClose,
+  onSave,
+}: {
+  onClose: () => void;
+  onSave: (payload: {
+    name: string;
+    description: string;
+    goal: number;
+    category: Campaign["category"];
+    endsAt: string;
+  }) => void;
+}) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [goal, setGoal] = useState("5000");
+  const [endsAt, setEndsAt] = useState("");
+  const [category, setCategory] = useState<Campaign["category"]>("Education");
+
+  const canSave = name.trim().length > 2 && description.trim().length > 8 && Number(goal) > 0;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-4 backdrop-blur-sm md:items-center"
@@ -84,14 +121,32 @@ function CreateCampaignDialog({ onClose }: { onClose: () => void }) {
             Campaign title
             <input
               type="text"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
               placeholder="Ramadan family support"
               className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
             />
           </label>
           <label className="grid gap-1.5 text-sm">
+            Category
+            <select
+              value={category}
+              onChange={(event) => setCategory(event.target.value as Campaign["category"])}
+              className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
+            >
+              {campaignCategories.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1.5 text-sm">
             Goal ($)
             <input
               type="number"
+              value={goal}
+              onChange={(event) => setGoal(event.target.value)}
               placeholder="50000"
               className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
             />
@@ -100,6 +155,8 @@ function CreateCampaignDialog({ onClose }: { onClose: () => void }) {
             End date
             <input
               type="date"
+              value={endsAt}
+              onChange={(event) => setEndsAt(event.target.value)}
               className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
             />
           </label>
@@ -107,6 +164,8 @@ function CreateCampaignDialog({ onClose }: { onClose: () => void }) {
             Description
             <textarea
               rows={3}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
               placeholder="Describe campaign impact..."
               className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
             />
@@ -117,7 +176,20 @@ function CreateCampaignDialog({ onClose }: { onClose: () => void }) {
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={onClose}>Save draft</Button>
+          <Button
+            disabled={!canSave}
+            onClick={() =>
+              onSave({
+                name,
+                description,
+                goal: Number(goal),
+                category,
+                endsAt,
+              })
+            }
+          >
+            Save draft
+          </Button>
         </div>
       </div>
     </div>

@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ClipboardList, NotebookPen, Users } from "lucide-react";
-import { orphans } from "@/data/orphany";
+import { useOrphanyStore } from "@/context/orphany-store";
 import { StatCard } from "@/components/orphany/StatCard";
 import { StatusBadge } from "@/components/orphany/StatusBadge";
 import { Button } from "@/components/ui/button";
 
 export function VolunteerBento() {
+  const { orphans, volunteerNotes, addVolunteerNote } = useOrphanyStore();
   const assigned = orphans.slice(0, 3);
   const [noteTargetId, setNoteTargetId] = useState<string | null>(null);
   const [note, setNote] = useState("");
@@ -17,7 +18,7 @@ export function VolunteerBento() {
   };
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 xl:auto-rows-[minmax(0,11rem)]">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 xl:auto-rows-[minmax(11rem,auto)]">
       <StatCard
         label="Assigned orphans"
         value={String(assigned.length)}
@@ -26,8 +27,8 @@ export function VolunteerBento() {
       />
       <StatCard
         label="Notes added"
-        value="14"
-        delta="+3 this week"
+        value={String(volunteerNotes.length)}
+        delta={volunteerNotes.length === 0 ? "No notes yet" : "Saved from your visits"}
         icon={NotebookPen}
         tone="accent"
       />
@@ -39,7 +40,7 @@ export function VolunteerBento() {
         tone="warning"
       />
 
-      <section className="rounded-2xl border bg-card p-5 shadow-sm md:col-span-2 xl:row-span-2">
+      <section className="min-w-0 rounded-2xl border bg-card p-5 shadow-sm md:col-span-2 xl:row-span-2">
         <h2 className="mb-3 font-display text-lg font-semibold">My assigned orphans</h2>
         <ul className="space-y-3">
           {assigned.map((orphan) => (
@@ -77,7 +78,13 @@ export function VolunteerBento() {
                   >
                     Add note
                   </Button>
-                  <Button asChild type="button" size="sm" variant="outline" className="h-7 rounded-lg px-3 text-xs">
+                  <Button
+                    asChild
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 rounded-lg px-3 text-xs"
+                  >
                     <Link to="/orphans/$orphanId" params={{ orphanId: orphan.id }}>
                       View profile
                     </Link>
@@ -89,7 +96,7 @@ export function VolunteerBento() {
         </ul>
       </section>
 
-      <section className="rounded-2xl border bg-sidebar p-5 text-sidebar-foreground shadow-sm md:col-span-2 xl:col-span-1 xl:row-span-2">
+      <section className="min-w-0 rounded-2xl border bg-sidebar p-5 text-sidebar-foreground shadow-sm md:col-span-2 xl:col-span-1 xl:row-span-2">
         <h2 className="font-display text-lg font-semibold">Today's tasks</h2>
         <ul className="mt-4 space-y-3 text-sm">
           {[
@@ -132,7 +139,17 @@ export function VolunteerBento() {
               <Button type="button" variant="outline" onClick={closeNoteDialog}>
                 Cancel
               </Button>
-              <Button type="button" onClick={closeNoteDialog} disabled={!note.trim()}>
+              <Button
+                type="button"
+                onClick={() => {
+                  if (!noteTarget) {
+                    return;
+                  }
+                  addVolunteerNote(noteTarget.id, note);
+                  closeNoteDialog();
+                }}
+                disabled={!note.trim()}
+              >
                 Save note
               </Button>
             </div>

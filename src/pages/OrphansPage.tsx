@@ -4,7 +4,8 @@ import { OrphanCard } from "@/components/orphany/OrphanCard";
 import { OrphanFilterGroup } from "@/components/orphans/OrphanFilterGroup";
 import { SponsorDialog } from "@/components/orphans/SponsorDialog";
 import { Button } from "@/components/ui/button";
-import { orphans, type Orphan } from "@/data/orphany";
+import { useOrphanyStore } from "@/context/orphany-store";
+import { type Orphan } from "@/data/orphany";
 import { useRole } from "@/hooks/use-role";
 
 const ages = ["All", "0–6", "7–10", "11+"] as const;
@@ -13,6 +14,7 @@ const urgencies = ["All", "High", "Medium", "Low"] as const;
 
 export function OrphansPage() {
   const [role] = useRole();
+  const { orphans, addOrphan, sponsorOrphan } = useOrphanyStore();
   const [age, setAge] = useState<(typeof ages)[number]>("All");
   const [status, setStatus] = useState<(typeof statuses)[number]>("All");
   const [urgency, setUrgency] = useState<(typeof urgencies)[number]>("All");
@@ -82,13 +84,56 @@ export function OrphansPage() {
         ))}
       </div>
 
-      {selected && <SponsorDialog orphan={selected} onClose={() => setSelected(null)} />}
-      {isCreateOpen && <CreateOrphanDialog onClose={() => setIsCreateOpen(false)} />}
+      {selected && (
+        <SponsorDialog
+          orphan={selected}
+          onConfirm={(amount) => sponsorOrphan(selected.id, amount)}
+          onClose={() => setSelected(null)}
+        />
+      )}
+      {isCreateOpen && (
+        <CreateOrphanDialog
+          onClose={() => setIsCreateOpen(false)}
+          onSave={(payload) => {
+            addOrphan(payload);
+            setIsCreateOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function CreateOrphanDialog({ onClose }: { onClose: () => void }) {
+function CreateOrphanDialog({
+  onClose,
+  onSave,
+}: {
+  onClose: () => void;
+  onSave: (payload: {
+    name: string;
+    age: number;
+    location: string;
+    story: string;
+    monthlyCost: number;
+    urgency: Orphan["urgency"];
+    needs: string[];
+  }) => void;
+}) {
+  const [name, setName] = useState("");
+  const [age, setAge] = useState("8");
+  const [location, setLocation] = useState("");
+  const [story, setStory] = useState("");
+  const [monthlyCost, setMonthlyCost] = useState("80");
+  const [urgency, setUrgency] = useState<Orphan["urgency"]>("Medium");
+  const [needs, setNeeds] = useState("Education, Clothing");
+
+  const canSave =
+    name.trim().length > 2 &&
+    Number(age) > 0 &&
+    location.trim().length > 2 &&
+    story.trim().length > 10 &&
+    Number(monthlyCost) > 0;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-4 backdrop-blur-sm md:items-center"
@@ -108,6 +153,8 @@ function CreateOrphanDialog({ onClose }: { onClose: () => void }) {
             Full name
             <input
               type="text"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
               placeholder="Amina K."
               className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
             />
@@ -116,15 +163,55 @@ function CreateOrphanDialog({ onClose }: { onClose: () => void }) {
             Age
             <input
               type="number"
+              value={age}
+              onChange={(event) => setAge(event.target.value)}
               placeholder="8"
               className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
             />
+          </label>
+          <label className="grid gap-1.5 text-sm">
+            Monthly cost ($)
+            <input
+              type="number"
+              value={monthlyCost}
+              onChange={(event) => setMonthlyCost(event.target.value)}
+              placeholder="80"
+              className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
+            />
+          </label>
+          <label className="grid gap-1.5 text-sm">
+            Urgency
+            <select
+              value={urgency}
+              onChange={(event) => setUrgency(event.target.value as Orphan["urgency"])}
+              className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
+            >
+              {urgencies
+                .filter((option) => option !== "All")
+                .map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+            </select>
           </label>
           <label className="grid gap-1.5 text-sm sm:col-span-2">
             Location
             <input
               type="text"
+              value={location}
+              onChange={(event) => setLocation(event.target.value)}
               placeholder="Amman, Jordan"
+              className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
+            />
+          </label>
+          <label className="grid gap-1.5 text-sm sm:col-span-2">
+            Needs (comma separated)
+            <input
+              type="text"
+              value={needs}
+              onChange={(event) => setNeeds(event.target.value)}
+              placeholder="Education, Food"
               className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
             />
           </label>
@@ -132,6 +219,8 @@ function CreateOrphanDialog({ onClose }: { onClose: () => void }) {
             Story
             <textarea
               rows={3}
+              value={story}
+              onChange={(event) => setStory(event.target.value)}
               placeholder="Short background and current needs..."
               className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
             />
@@ -142,7 +231,25 @@ function CreateOrphanDialog({ onClose }: { onClose: () => void }) {
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={onClose}>Save profile</Button>
+          <Button
+            disabled={!canSave}
+            onClick={() =>
+              onSave({
+                name,
+                age: Number(age),
+                location,
+                story,
+                monthlyCost: Number(monthlyCost),
+                urgency,
+                needs: needs
+                  .split(",")
+                  .map((need) => need.trim())
+                  .filter(Boolean),
+              })
+            }
+          >
+            Save profile
+          </Button>
         </div>
       </div>
     </div>

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import type { Role } from "@/data/orphany";
-import { notifications } from "@/data/orphany";
+import { useOrphanyStore } from "@/context/orphany-store";
 import { useRole } from "@/hooks/use-role";
 
 const nav = [
@@ -32,6 +32,7 @@ const roles: { value: Role; label: string }[] = [
 
 export function AppShell() {
   const [role, setRole] = useRole();
+  const { notifications } = useOrphanyStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });

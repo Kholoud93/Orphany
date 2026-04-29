@@ -1,28 +1,29 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, Bell, CalendarClock, DollarSign, HeartHandshake } from "lucide-react";
-import { notifications, myDonations, orphans } from "@/data/orphany";
+import { useOrphanyStore } from "@/context/orphany-store";
 import { DonationHistoryList } from "@/components/orphany/DonationHistoryList";
 import { ProgressBar } from "@/components/orphany/ProgressBar";
 import { StatCard } from "@/components/orphany/StatCard";
 import { StatusBadge } from "@/components/orphany/StatusBadge";
 
 export function DonorBento() {
-  const sponsoredCount = 2;
-  const totalGiven = myDonations
+  const { donations, notifications, orphans } = useOrphanyStore();
+  const sponsoredCount = orphans.filter((orphan) => orphan.status === "Sponsored").length;
+  const totalGiven = donations
     .filter((donation) => donation.status === "Completed")
     .reduce((sum, donation) => sum + donation.amount, 0);
-  const upcoming = myDonations.filter((donation) => donation.status === "Upcoming");
+  const upcoming = donations.filter((donation) => donation.status === "Upcoming");
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 xl:auto-rows-[minmax(0,11rem)]">
-      <section className="rounded-2xl border bg-gradient-to-br from-primary to-primary-soft p-6 text-primary-foreground shadow-sm md:col-span-2 xl:row-span-2">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 xl:auto-rows-[minmax(11rem,auto)]">
+      <section className="min-w-0 rounded-2xl border bg-linear-to-br from-primary to-primary-soft p-6 text-primary-foreground shadow-sm md:col-span-2 xl:row-span-2">
         <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider opacity-80">
           <HeartHandshake className="h-3.5 w-3.5" /> Your impact
         </div>
         <div className="mt-3 font-display text-4xl font-semibold tabular-nums sm:text-5xl">
           ${totalGiven}
         </div>
-        <div className="mt-1 text-sm opacity-90">given across {myDonations.length} donations</div>
+        <div className="mt-1 text-sm opacity-90">given across {donations.length} donations</div>
         <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-xl bg-white/15 p-3 backdrop-blur">
             <div className="text-xs opacity-80">Sponsored</div>
@@ -56,7 +57,7 @@ export function DonorBento() {
         tone="warning"
       />
 
-      <section className="rounded-2xl border bg-card p-5 shadow-sm md:col-span-1 xl:col-span-2">
+      <section className="min-w-0 rounded-2xl border bg-card p-5 shadow-sm md:col-span-1 xl:col-span-2">
         <h2 className="mb-3 font-display text-lg font-semibold">Your sponsored orphans</h2>
         <ul className="space-y-2">
           {orphans.slice(0, 2).map((orphan) => (
@@ -83,12 +84,12 @@ export function DonorBento() {
         </ul>
       </section>
 
-      <section className="rounded-2xl border bg-card p-5 shadow-sm md:col-span-2 xl:col-span-2 xl:row-span-2">
+      <section className="min-w-0 rounded-2xl border bg-card p-5 shadow-sm md:col-span-2 xl:col-span-2 xl:row-span-2">
         <h2 className="mb-3 font-display text-lg font-semibold">Donation history</h2>
-        <DonationHistoryList donations={myDonations} />
+        <DonationHistoryList donations={donations} />
       </section>
 
-      <section className="rounded-2xl border bg-card p-5 shadow-sm md:col-span-2 xl:col-span-2">
+      <section className="min-w-0 rounded-2xl border bg-card p-5 shadow-sm md:col-span-2 xl:col-span-2">
         <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold">
           <Bell className="h-4 w-4 text-primary" />
           Notifications

@@ -4,12 +4,13 @@ import type { Campaign } from "@/data/orphany";
 
 type DonateDialogProps = {
   campaign: Campaign;
+  onDonate: (amount: number) => void;
   onClose: () => void;
 };
 
 const quickAmounts = [25, 50, 100, 250] as const;
 
-export function DonateDialog({ campaign, onClose }: DonateDialogProps) {
+export function DonateDialog({ campaign, onDonate, onClose }: DonateDialogProps) {
   const [amount, setAmount] = useState<number>(quickAmounts[1]);
   const selectedLabel = useMemo(() => `$${amount.toLocaleString()}`, [amount]);
 
@@ -57,7 +58,13 @@ export function DonateDialog({ campaign, onClose }: DonateDialogProps) {
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={onClose} disabled={amount <= 0}>
+          <Button
+            onClick={() => {
+              onDonate(amount);
+              onClose();
+            }}
+            disabled={amount <= 0}
+          >
             Donate {selectedLabel}
           </Button>
         </div>
