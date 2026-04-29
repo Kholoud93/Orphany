@@ -1,4 +1,4 @@
-import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Bell,
   CalendarDays,
@@ -11,7 +11,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Role } from "@/data/orphany";
 import { useOrphanyStore } from "@/context/orphany-store";
 import { useRole } from "@/hooks/use-role";
@@ -30,13 +30,133 @@ const roles: { value: Role; label: string }[] = [
   { value: "volunteer", label: "Volunteer" },
 ];
 
+type SearchResult = {
+  id: string;
+  type: "orphan" | "campaign" | "event" | "donation" | "notification";
+  title: string;
+  subtitle: string;
+};
+
+const includesQuery = (value: string, query: string) => value.toLowerCase().includes(query);
+
 export function AppShell() {
   const [role, setRole] = useRole();
-  const { notifications } = useOrphanyStore();
+  const navigate = useNavigate();
+  const { notifications, orphans, campaigns, events, donations } = useOrphanyStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });
   const unread = notifications.filter((n) => n.unread).length;
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+
+  const searchResults = useMemo<SearchResult[]>(() => {
+    if (normalizedQuery.length < 2) {
+      return [];
+    }
+
+    const orphanResults = orphans
+      .filter((orphan) =>
+        [
+          orphan.name,
+          orphan.location,
+          orphan.story,
+          orphan.status,
+          orphan.needs.join(" "),
+        ].some((value) => includesQuery(value, normalizedQuery)),
+      )
+      .slice(0, 4)
+      .map((orphan) => ({
+        id: orphan.id,
+        type: "orphan" as const,
+        title: orphan.name,
+        subtitle: `${orphan.location} · Age ${orphan.age}`,
+      }));
+
+    const campaignResults = campaigns
+      .filter((campaign) =>
+        [campaign.name, campaign.description, campaign.category].some((value) =>
+          includesQuery(value, normalizedQuery),
+        ),
+      )
+      .slice(0, 3)
+      .map((campaign) => ({
+        id: campaign.id,
+        type: "campaign" as const,
+        title: campaign.name,
+        subtitle: `${campaign.category} · $${campaign.raised}/$${campaign.goal}`,
+      }));
+
+    const eventResults = events
+      .filter((event) => [event.title, event.kind].some((value) => includesQuery(value, normalizedQuery)))
+      .slice(0, 2)
+      .map((event) => ({
+        id: event.id,
+        type: "event" as const,
+        title: event.title,
+        subtitle: `${event.kind} · ${new Date(event.date).toLocaleDateString()}`,
+      }));
+
+    const donationResults = donations
+      .filter((donation) =>
+        [donation.target, donation.type, donation.status].some((value) =>
+          includesQuery(value, normalizedQuery),
+        ),
+      )
+      .slice(0, 2)
+      .map((donation) => ({
+        id: donation.id,
+        type: "donation" as const,
+        title: `${donation.target} · $${donation.amount}`,
+        subtitle: `${donation.type} · ${donation.status}`,
+      }));
+
+    const notificationResults = notifications
+      .filter((notification) =>
+        [notification.title, notification.body].some((value) =>
+          includesQuery(value, normalizedQuery),
+        ),
+      )
+      .slice(0, 2)
+      .map((notification) => ({
+        id: notification.id,
+        type: "notification" as const,
+        title: notification.title,
+        subtitle: notification.body,
+      }));
+
+    return [
+      ...orphanResults,
+      ...campaignResults,
+      ...eventResults,
+      ...donationResults,
+      ...notificationResults,
+    ].slice(0, 10);
+  }, [campaigns, donations, events, normalizedQuery, notifications, orphans]);
+
+  const openSearchResult = async (result: SearchResult) => {
+    setSearchOpen(false);
+    setSearchQuery("");
+
+    if (result.type === "orphan") {
+      await navigate({ to: "/orphan-profile/$orphanId", params: { orphanId: result.id } });
+      return;
+    }
+    if (result.type === "campaign") {
+      await navigate({ to: "/campaigns" });
+      return;
+    }
+    if (result.type === "event") {
+      await navigate({ to: "/calendar" });
+      return;
+    }
+    if (result.type === "donation") {
+      await navigate({ to: "/profile" });
+      return;
+    }
+    await navigate({ to: "/" });
+  };
 
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
@@ -110,9 +230,64 @@ export function AppShell() {
           <div className="relative ml-auto hidden max-w-md flex-1 md:block">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
+              value={searchQuery}
+              onChange={(event) => {
+                setSearchQuery(event.target.value);
+                setSearchOpen(true);
+              }}
+              onFocus={() => setSearchOpen(true)}
+              onBlur={() => {
+                setTimeout(() => setSearchOpen(false), 120);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  setSearchOpen(false);
+                  return;
+                }
+                if (event.key === "Enter" && searchResults[0]) {
+                  event.preventDefault();
+                  void openSearchResult(searchResults[0]);
+                }
+              }}
               placeholder="Search orphans, campaigns, donors…"
               className="w-full rounded-xl border bg-card py-2 pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/20"
             />
+            {searchOpen && (
+              <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-40 max-h-80 overflow-y-auto rounded-xl border bg-card p-2 shadow-lg">
+                {searchResults.length === 0 ? (
+                  <div className="px-2 py-3 text-sm text-muted-foreground">
+                    {normalizedQuery.length < 2
+                      ? "Type at least 2 letters to search."
+                      : "No results found."}
+                  </div>
+                ) : (
+                  <ul className="space-y-1">
+                    {searchResults.map((result) => (
+                      <li key={`${result.type}-${result.id}`}>
+                        <button
+                          type="button"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => {
+                            void openSearchResult(result);
+                          }}
+                          className="w-full rounded-lg px-2 py-2 text-left hover:bg-muted"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="truncate text-sm font-medium">{result.title}</span>
+                            <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[10px] uppercase text-muted-foreground">
+                              {result.type}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                            {result.subtitle}
+                          </p>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
           <button
             type="button"
