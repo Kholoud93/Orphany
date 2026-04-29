@@ -15,6 +15,7 @@ import { Route as CampaignsRouteImport } from './routes/campaigns'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OrphansOrphanIdRouteImport } from './routes/orphans.$orphanId'
+import { Route as OrphanProfileOrphanIdRouteImport } from './routes/orphan-profile.$orphanId'
 
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
@@ -46,6 +47,11 @@ const OrphansOrphanIdRoute = OrphansOrphanIdRouteImport.update({
   path: '/$orphanId',
   getParentRoute: () => OrphansRoute,
 } as any)
+const OrphanProfileOrphanIdRoute = OrphanProfileOrphanIdRouteImport.update({
+  id: '/orphan-profile/$orphanId',
+  path: '/orphan-profile/$orphanId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/campaigns': typeof CampaignsRoute
   '/orphans': typeof OrphansRouteWithChildren
   '/profile': typeof ProfileRoute
+  '/orphan-profile/$orphanId': typeof OrphanProfileOrphanIdRoute
   '/orphans/$orphanId': typeof OrphansOrphanIdRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/campaigns': typeof CampaignsRoute
   '/orphans': typeof OrphansRouteWithChildren
   '/profile': typeof ProfileRoute
+  '/orphan-profile/$orphanId': typeof OrphanProfileOrphanIdRoute
   '/orphans/$orphanId': typeof OrphansOrphanIdRoute
 }
 export interface FileRoutesById {
@@ -70,6 +78,7 @@ export interface FileRoutesById {
   '/campaigns': typeof CampaignsRoute
   '/orphans': typeof OrphansRouteWithChildren
   '/profile': typeof ProfileRoute
+  '/orphan-profile/$orphanId': typeof OrphanProfileOrphanIdRoute
   '/orphans/$orphanId': typeof OrphansOrphanIdRoute
 }
 export interface FileRouteTypes {
@@ -80,6 +89,7 @@ export interface FileRouteTypes {
     | '/campaigns'
     | '/orphans'
     | '/profile'
+    | '/orphan-profile/$orphanId'
     | '/orphans/$orphanId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -88,6 +98,7 @@ export interface FileRouteTypes {
     | '/campaigns'
     | '/orphans'
     | '/profile'
+    | '/orphan-profile/$orphanId'
     | '/orphans/$orphanId'
   id:
     | '__root__'
@@ -96,6 +107,7 @@ export interface FileRouteTypes {
     | '/campaigns'
     | '/orphans'
     | '/profile'
+    | '/orphan-profile/$orphanId'
     | '/orphans/$orphanId'
   fileRoutesById: FileRoutesById
 }
@@ -105,6 +117,7 @@ export interface RootRouteChildren {
   CampaignsRoute: typeof CampaignsRoute
   OrphansRoute: typeof OrphansRouteWithChildren
   ProfileRoute: typeof ProfileRoute
+  OrphanProfileOrphanIdRoute: typeof OrphanProfileOrphanIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -151,6 +164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrphansOrphanIdRouteImport
       parentRoute: typeof OrphansRoute
     }
+    '/orphan-profile/$orphanId': {
+      id: '/orphan-profile/$orphanId'
+      path: '/orphan-profile/$orphanId'
+      fullPath: '/orphan-profile/$orphanId'
+      preLoaderRoute: typeof OrphanProfileOrphanIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -171,6 +191,7 @@ const rootRouteChildren: RootRouteChildren = {
   CampaignsRoute: CampaignsRoute,
   OrphansRoute: OrphansRouteWithChildren,
   ProfileRoute: ProfileRoute,
+  OrphanProfileOrphanIdRoute: OrphanProfileOrphanIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

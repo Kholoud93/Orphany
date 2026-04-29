@@ -1,5 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { OrphanDetailsPage } from "@/pages/OrphanDetailsPage";
+import { Navigate, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/orphans/$orphanId")({
   head: () => ({
@@ -14,5 +13,5 @@ export const Route = createFileRoute("/orphans/$orphanId")({
 function OrphanDetailsRouteComponent() {
   const { orphanId } = Route.useParams();
 
-  return <OrphanDetailsPage orphanId={orphanId} />;
+  return <Navigate to="/orphan-profile/$orphanId" params={{ orphanId }} replace />;
 }
