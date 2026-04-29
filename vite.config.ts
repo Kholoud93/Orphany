@@ -2,6 +2,7 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
+import { nitro } from "nitro/vite";
 import { defineConfig, type Plugin } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
@@ -26,15 +27,17 @@ const faviconAliasPlugin = (): Plugin => ({
 });
 
 export default defineConfig(({ command }) => {
+  const isVercelBuild = command === "build" && Boolean(process.env.VERCEL);
   const plugins = [
     tailwindcss(),
     tsconfigPaths({ projects: ["./tsconfig.json"] }),
     faviconAliasPlugin(),
     tanstackStart(),
+    ...(isVercelBuild ? [nitro()] : []),
     react(),
   ];
 
-  if (command === "build") {
+  if (command === "build" && !isVercelBuild) {
     plugins.push(cloudflare({ viteEnvironment: { name: "ssr" } }));
   }
 
