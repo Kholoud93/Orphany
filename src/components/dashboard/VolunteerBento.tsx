@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { ClipboardList, NotebookPen, Users } from "lucide-react";
 import { useOrphanyStore } from "@/context/orphany-store";
 import { StatCard } from "@/components/orphany/StatCard";
@@ -8,13 +8,57 @@ import { Button } from "@/components/ui/button";
 
 export function VolunteerBento() {
   const { orphans, volunteerNotes, addVolunteerNote } = useOrphanyStore();
+  const navigate = useNavigate();
   const assigned = orphans.slice(0, 3);
   const [noteTargetId, setNoteTargetId] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const [isNoteSaved, setIsNoteSaved] = useState(false);
+  const [openingProfileId, setOpeningProfileId] = useState<string | null>(null);
   const noteTarget = assigned.find((orphan) => orphan.id === noteTargetId) ?? null;
+  const latestNoteByOrphanId = volunteerNotes.reduce<Record<string, string>>((acc, item) => {
+    if (!acc[item.orphanId]) {
+      acc[item.orphanId] = item.note;
+    }
+    return acc;
+  }, {});
+
+  const openNoteDialog = (orphanId: string) => {
+    setNoteTargetId(orphanId);
+    setNote(latestNoteByOrphanId[orphanId] ?? "");
+    setIsNoteSaved(false);
+  };
+
   const closeNoteDialog = () => {
     setNoteTargetId(null);
     setNote("");
+    setIsSavingNote(false);
+    setIsNoteSaved(false);
+  };
+
+  const handleSaveNote = async () => {
+    if (!noteTarget || !note.trim()) {
+      return;
+    }
+    setIsSavingNote(true);
+    addVolunteerNote(noteTarget.id, note);
+    setIsNoteSaved(true);
+    setTimeout(() => {
+      closeNoteDialog();
+    }, 350);
+  };
+
+  const handleViewProfile = async (orphanId: string) => {
+    const targetPath = `/orphan-profile/${orphanId}`;
+    setOpeningProfileId(orphanId);
+    try {
+      await navigate({ to: "/orphan-profile/$orphanId", params: { orphanId } });
+      if (typeof window !== "undefined" && window.location.pathname !== targetPath) {
+        window.location.assign(targetPath);
+      }
+    } finally {
+      setOpeningProfileId(null);
+    }
   };
 
   return (
@@ -69,25 +113,31 @@ export function VolunteerBento() {
                   </StatusBadge>
                 </div>
                 <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{orphan.story}</p>
+                {latestNoteByOrphanId[orphan.id] && (
+                  <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+                    Latest note: {latestNoteByOrphanId[orphan.id]}
+                  </p>
+                )}
                 <div className="mt-2 flex flex-wrap gap-2">
                   <Button
                     type="button"
                     size="sm"
                     className="h-7 rounded-lg px-3 text-xs"
-                    onClick={() => setNoteTargetId(orphan.id)}
+                    onClick={() => openNoteDialog(orphan.id)}
                   >
-                    Add note
+                    {latestNoteByOrphanId[orphan.id] ? "Edit note" : "Add note"}
                   </Button>
                   <Button
-                    asChild
                     type="button"
                     size="sm"
                     variant="outline"
                     className="h-7 rounded-lg px-3 text-xs"
+                    onClick={() => {
+                      void handleViewProfile(orphan.id);
+                    }}
+                    disabled={openingProfileId === orphan.id}
                   >
-                    <Link to="/orphans/$orphanId" params={{ orphanId: orphan.id }}>
-                      View profile
-                    </Link>
+                    {openingProfileId === orphan.id ? "Opening..." : "View profile"}
                   </Button>
                 </div>
               </div>
@@ -133,24 +183,19 @@ export function VolunteerBento() {
               value={note}
               onChange={(event) => setNote(event.target.value)}
               placeholder="Write a short update about today's visit..."
+              disabled={isSavingNote}
               className="mt-4 min-h-28 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
             />
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Button type="button" variant="outline" onClick={closeNoteDialog}>
+              <Button type="button" variant="outline" onClick={closeNoteDialog} disabled={isSavingNote}>
                 Cancel
               </Button>
               <Button
                 type="button"
-                onClick={() => {
-                  if (!noteTarget) {
-                    return;
-                  }
-                  addVolunteerNote(noteTarget.id, note);
-                  closeNoteDialog();
-                }}
-                disabled={!note.trim()}
+                onClick={handleSaveNote}
+                disabled={!note.trim() || isSavingNote || isNoteSaved}
               >
-                Save note
+                {isSavingNote ? "Saving..." : isNoteSaved ? "Saved" : "Save note"}
               </Button>
             </div>
           </div>
