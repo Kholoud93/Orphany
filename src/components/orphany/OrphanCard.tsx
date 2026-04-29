@@ -11,6 +11,8 @@ const statusTone = {
 } as const;
 
 export function OrphanCard({ orphan, onSponsor }: { orphan: Orphan; onSponsor?: (o: Orphan) => void }) {
+  const isFullySponsored = orphan.status === "Sponsored" || orphan.raised >= orphan.monthlyCost;
+
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition hover:shadow-md hover:-translate-y-0.5">
       <div className="relative aspect-square overflow-hidden bg-muted">
@@ -44,8 +46,14 @@ export function OrphanCard({ orphan, onSponsor }: { orphan: Orphan; onSponsor?: 
           ))}
         </div>
         <ProgressBar value={orphan.raised} max={orphan.monthlyCost} />
-        <Button onClick={() => onSponsor?.(orphan)} className="mt-1 w-full gap-2">
-          <Heart className="h-4 w-4" /> Sponsor — ${orphan.monthlyCost}/mo
+        <Button
+          onClick={() => onSponsor?.(orphan)}
+          disabled={isFullySponsored}
+          variant={isFullySponsored ? "secondary" : "default"}
+          className="mt-1 w-full gap-2"
+        >
+          <Heart className="h-4 w-4" />
+          {isFullySponsored ? "Fully sponsored" : `Sponsor — $${orphan.monthlyCost}/mo`}
         </Button>
       </div>
     </article>

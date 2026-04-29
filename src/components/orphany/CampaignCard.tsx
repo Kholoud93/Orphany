@@ -6,6 +6,8 @@ import { CalendarDays } from "lucide-react";
 
 export function CampaignCard({ campaign, onDonate }: { campaign: Campaign; onDonate?: (c: Campaign) => void }) {
   const daysLeft = Math.max(0, Math.round((new Date(campaign.endsAt).getTime() - Date.now()) / 86400000));
+  const isGoalReached = campaign.raised >= campaign.goal;
+
   return (
     <article className="flex flex-col gap-4 rounded-2xl border bg-card p-5 shadow-sm transition hover:shadow-md">
       <div className="flex items-start justify-between gap-3">
@@ -20,7 +22,14 @@ export function CampaignCard({ campaign, onDonate }: { campaign: Campaign; onDon
       </div>
       <p className="text-sm text-muted-foreground">{campaign.description}</p>
       <ProgressBar value={campaign.raised} max={campaign.goal} tone="accent" />
-      <Button onClick={() => onDonate?.(campaign)} variant="default" className="w-full">Donate now</Button>
+      <Button
+        onClick={() => onDonate?.(campaign)}
+        disabled={isGoalReached}
+        variant={isGoalReached ? "secondary" : "default"}
+        className="w-full"
+      >
+        {isGoalReached ? "Goal reached" : "Donate now"}
+      </Button>
     </article>
   );
 }

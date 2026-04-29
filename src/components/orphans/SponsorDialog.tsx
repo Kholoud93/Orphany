@@ -4,14 +4,34 @@ import type { Orphan } from "@/data/orphany";
 
 type SponsorDialogProps = {
   orphan: Orphan;
-  onConfirm?: (amount: number) => void;
+  onConfirm?: (amount: number) => void | Promise<void>;
   onClose: () => void;
 };
 
 export function SponsorDialog({ orphan, onConfirm, onClose }: SponsorDialogProps) {
   const [mode, setMode] = useState<"full" | "partial">("full");
   const [amount, setAmount] = useState(Math.max(10, Math.round(orphan.monthlyCost / 4)));
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const value = mode === "full" ? orphan.monthlyCost : amount;
+
+  const handleConfirm = async () => {
+    if (!onConfirm) {
+      onClose();
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await Promise.resolve(onConfirm(value));
+      setIsSuccess(true);
+      setTimeout(() => {
+        onClose();
+      }, 350);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div
@@ -36,6 +56,7 @@ export function SponsorDialog({ orphan, onConfirm, onClose }: SponsorDialogProps
           <button
             type="button"
             onClick={() => setMode("full")}
+            disabled={isSubmitting}
             className={`rounded-lg py-2 text-sm font-medium ${mode === "full" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
           >
             Full sponsorship
@@ -43,6 +64,7 @@ export function SponsorDialog({ orphan, onConfirm, onClose }: SponsorDialogProps
           <button
             type="button"
             onClick={() => setMode("partial")}
+            disabled={isSubmitting}
             className={`rounded-lg py-2 text-sm font-medium ${
               mode === "partial" ? "bg-card shadow-sm" : "text-muted-foreground"
             }`}
@@ -60,6 +82,7 @@ export function SponsorDialog({ orphan, onConfirm, onClose }: SponsorDialogProps
               max={orphan.monthlyCost}
               value={amount}
               onChange={(event) => setAmount(Number(event.target.value))}
+              disabled={isSubmitting}
               className="mt-2 w-full accent-primary"
             />
             <div className="mt-1 text-right font-display text-lg font-semibold tabular-nums">
@@ -82,19 +105,18 @@ export function SponsorDialog({ orphan, onConfirm, onClose }: SponsorDialogProps
               type="button"
               variant="outline"
               onClick={onClose}
+              disabled={isSubmitting}
               className="flex-1 sm:flex-none"
             >
               Cancel
             </Button>
             <Button
               type="button"
-              onClick={() => {
-                onConfirm?.(value);
-                onClose();
-              }}
+              onClick={handleConfirm}
+              disabled={isSubmitting || isSuccess}
               className="flex-1 sm:flex-none"
             >
-              Confirm ${value}/mo
+              {isSubmitting ? "Saving..." : isSuccess ? "Saved" : `Confirm $${value}/mo`}
             </Button>
           </div>
         </div>
