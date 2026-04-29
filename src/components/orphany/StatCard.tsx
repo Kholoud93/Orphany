@@ -23,7 +23,9 @@ export function StatCard({ label, value, delta, icon: Icon, tone = "primary", cl
         </span>
       </div>
       <div className="mt-3">
-        <div className="font-display text-3xl font-semibold tracking-tight tabular-nums">{value}</div>
+        <div className="font-display text-2xl font-semibold tracking-tight tabular-nums sm:text-3xl">
+          {value}
+        </div>
         {delta && <div className="mt-1 text-xs text-accent">{delta}</div>}
       </div>
     </div>
