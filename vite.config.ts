@@ -2,13 +2,34 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+
+const faviconAliasPlugin = (): Plugin => ({
+  name: "favicon-ico-alias",
+  configureServer(server) {
+    server.middlewares.use((req, _res, next) => {
+      if (req.url === "/favicon.ico") {
+        req.url = "/favicon.svg";
+      }
+      next();
+    });
+  },
+  configurePreviewServer(server) {
+    server.middlewares.use((req, _res, next) => {
+      if (req.url === "/favicon.ico") {
+        req.url = "/favicon.svg";
+      }
+      next();
+    });
+  },
+});
 
 export default defineConfig(({ command }) => {
   const plugins = [
     tailwindcss(),
     tsconfigPaths({ projects: ["./tsconfig.json"] }),
+    faviconAliasPlugin(),
     tanstackStart(),
     react(),
   ];
